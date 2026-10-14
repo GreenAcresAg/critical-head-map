@@ -145,7 +145,7 @@ async function openDwr1d(site){
     showDetail(`<div class="d-title">DWR 1D model site ${esc(site)}</div><div class="d-sub">MODFLOW 6-CSUB · ensemble-mean critical head (DWR / INTERA, Dec 2025)</div>` +
         `<div class="d-hero"><div><div class="big">${fmt(p.ch_2024, 0)} ft</div><div class="lab">calibrated critical head, 2024 · lower aquifer · NAVD88</div></div></div>${chart}` +
         legendRow([{ c: C_1D, t: "model critical head (preconsolidation head)" }, { c: "#38bdf8", t: "observed lower-aquifer heads", dot: 1 }]) + `<div class="d-grid">${rows.join("")}</div>` +
-        `<div class="d-note">System-level ensemble mean from DWR's published 1D models. Critical head is often <b>higher</b> than the lowest observed level because of delayed equilibration of clay interbeds. Forecast scenarios after 2024 are not shown.</div>`);
+        `<div class="d-note">Location = DWR/INTERA model site (a leveling-benchmark site, ~0.5-mile radius), <b>not a well</b>; heads come from wells within ~3 mi, not strictly collocated. System-level ensemble mean from DWR's published 1D models. Critical head is often <b>higher</b> than the lowest observed level because of delayed equilibration of clay interbeds. Forecast scenarios after 2024 are not shown.</div>`);
 }
 
 /* ── GPS detail ── */
