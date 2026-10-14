@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Critical Head Map — Mid-Kings River &amp; South Fork Kings GSAs</title>
+    <link rel="stylesheet" href="vendor/maplibre-gl.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="critical.css">
+</head>
+<body>
+
+<button id="sidebar-toggle" class="sidebar-toggle-btn">&#9776;</button>
+<div id="sidebar" class="sidebar-open">
+    <div class="sidebar-branding">
+        <img src="data/logo.png" alt="Green Acres Consulting, Inc." class="sidebar-logo">
+        <p class="branding-credit">Created by Green Acres Consulting, Inc.</p>
+    </div>
+
+    <div class="sidebar-header">
+        <h1>Critical Head Map</h1>
+        <p class="subtitle">Tulare Lake Subbasin &middot; Mid-Kings River &amp; South Fork Kings GSAs<br>Trend-based analysis &middot; DWR Land Subsidence BMP (Jan 2026) &sect;5.3.1</p>
+    </div>
+
+    <div class="sidebar-section">
+        <h3 class="section-title">Result per well</h3>
+        <div id="legend-conf" class="insar-legend"></div>
+        <p class="disclaimer-text" style="margin-top:6px"><b>Filled</b> = bracketed (subsidence seen at lower levels, none at/above the estimate). <b>Hollow ring</b> = upper bound only (levels never dropped low enough in the record to cause subsidence &mdash; critical head is <i>at or below</i> the value).</p>
+    </div>
+
+    <div class="sidebar-section">
+        <h3 class="section-title">Filters</h3>
+        <label class="filter-label" for="f-gsa">GSA</label>
+        <select id="f-gsa" class="filter-control"><option value="">Both GSAs</option><option>Mid-Kings River GSA</option><option>South Fork Kings GSA</option></select>
+        <label class="filter-label" for="f-aq" style="margin-top:8px">Aquifer position</label>
+        <select id="f-aq" class="filter-control">
+            <option value="">All</option><option value="Lower">Lower (below E-Clay)</option><option value="Upper">Upper (above E-Clay)</option><option value="Shallow">Shallow (context only)</option>
+        </select>
+        <label class="layer-toggle" style="margin-top:8px"><input type="checkbox" id="f-hide-nd"><span>Hide &ldquo;not determinable&rdquo; wells</span></label>
+    </div>
+
+    <div class="sidebar-section">
+        <h3 class="section-title">Summary</h3>
+        <div id="summary"></div>
+    </div>
+
+    <div class="sidebar-section">
+        <h3 class="section-title">Layers</h3>
+        <label class="layer-toggle"><input type="checkbox" id="toggle-insar" checked>
+            <span class="toggle-swatch" style="background:linear-gradient(90deg,#b30000,#fee08b,#1a3a5f)"></span><span>InSAR total displacement (<span id="insar-date">…</span>)</span></label>
+        <label class="filter-label" for="insar-op" style="margin-top:6px">Opacity</label>
+        <input type="range" id="insar-op" class="date-slider" min="0" max="100" value="65">
+        <label class="layer-toggle" style="margin-top:8px"><input type="checkbox" id="toggle-gsa" checked>
+            <span class="toggle-swatch swatch-outline" style="border-color:#f43f5e"></span><span>GSA boundaries</span></label>
+        <div id="insar-legend" class="insar-legend" style="margin-top:6px"></div>
+    </div>
+
+    <div class="sidebar-section">
+        <h3 class="section-title">Method (trend-based)</h3>
+        <ol class="method-list">
+            <li><b>Screen</b> SGMA wells: &ge;12 un-flagged readings since Jun 2015, &ge;6 yr span, no gap &gt;2.5 yr, recent data.</li>
+            <li><b>Collocate</b> DWR InSAR (median of 5 samples within ~110 m) with each well.</li>
+            <li><b>Find quiet windows</b>: centered 12-month displacement &ge; &minus;0.067 ft (InSAR accuracy) sustained &ge;1.5 yr. Most recent window with &ge;2 readings wins.</li>
+            <li><b>Estimate</b> = lowest groundwater elevation observed in that window (ft NAVD88). Levels at that elevation did not cause subsidence, so true critical head is at or below it.</li>
+            <li><b>Grade</b> by window length, readings, sensitivity to threshold (0.10 ft), and subsidence seen at higher levels (residual / depth mismatch).</li>
+            <li>No sustained quiet window &rarr; <b>not determinable</b> by trend; BMP &sect;5.3.4 calls for empirical / modeling analysis.</li>
+        </ol>
+        <p class="disclaimer-text">Trend-based estimates are approximate by design (BMP &sect;5.3.1). Re-evaluate as data accrue. <a class="popup-link" href="data/critical_head_summary.csv" download>Download results CSV</a></p>
+    </div>
+
+    <div class="sidebar-section">
+        <h3 class="section-title">Sources</h3>
+        <ul>
+            <li>CA DWR, <i>Land Subsidence BMP</i>, Jan 2026</li>
+            <li>SGMA Portal groundwater-level measurements (DWR, GSA-submitted)</li>
+            <li><a href="https://gis.water.ca.gov/arcgisimg/rest/services/SAR" target="_blank">DWR / TRE ALTAMIRA InSAR</a> (accuracy 0.067 ft)</li>
+        </ul>
+        <p class="disclaimer-text">For informational purposes only.</p>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<div id="detail" class="detail hidden">
+    <button id="detail-close" class="detail-close" title="Close">&times;</button>
+    <div id="detail-body"></div>
+</div>
+
+<button id="fullscreen-btn" class="fullscreen-btn" title="Toggle fullscreen">
+    <svg id="fs-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    <svg id="fs-collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+</button>
+
+<div id="basemap-selector" class="basemap-selector">
+    <button id="basemap-btn" class="basemap-btn" title="Change basemap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    </button>
+    <div id="basemap-menu" class="basemap-menu hidden">
+        <div class="basemap-option active" data-basemap="hybrid"><div class="basemap-thumb hybrid-thumb"></div><span>Hybrid</span></div>
+        <div class="basemap-option" data-basemap="satellite"><div class="basemap-thumb satellite-thumb"></div><span>Satellite</span></div>
+        <div class="basemap-option" data-basemap="usgs"><div class="basemap-thumb usgs-thumb"></div><span>USGS Topo</span></div>
+        <div class="basemap-option" data-basemap="streets"><div class="basemap-thumb streets-thumb"></div><span>Streets</span></div>
+    </div>
+</div>
+
+<script src="vendor/maplibre-gl.js"></script>
+<script src="vendor/turf.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
