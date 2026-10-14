@@ -18,6 +18,11 @@ Full write-up: **[STRATEGY.md](STRATEGY.md)**.
 
 Rerun after new data: refresh `~/sgma-annual-report-data`, then `python3 prep_wells.py && python3 prep_insar_wells.py && python3 analyze_trend.py`.
 
+## Public-data extension (Lemoore · Hanford · Corcoran)
+`prep_dwr_1d.py` → `prep_public_wells.py` (+ `clay_usgs.py`) → `prep_insar_public.py` → `analyze_empirical.py` → `validate_gps.py`; map layers in `layers2.js`
+(DWR 1D critical-head sites, 97 public wells by depth vs Corcoran Clay with empirical estimates, GPS stations). Details and results: STRATEGY.md addendum.
+Raw downloads (DWR 1D repo, DWR bulk GWL CSVs, USGS clay shapefiles) are NOT in this repo — URLs are in the script docstrings.
+
 ## Results (as of data through 2025-10; InSAR through 2026-04)
 See `data/critical_head_summary.csv`, STRATEGY.md §4 for interpretation.
 

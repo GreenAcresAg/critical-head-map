@@ -51,7 +51,7 @@ def main(multi, single):
             rr = list(csv.reader(open(ch)))
             row["ch_layer"] = rr[0][1].replace("Mean CH - ", "").replace("Mean  CH - ", "").strip()
             ser = [(yr(a[0]), float(a[1])) for a in rr[1:] if len(a) > 1 and a[1]]
-            series[s["Name"]] = [[round(a, 3), round(b, 2)] for a, b in ser if a <= CALIB_END + 0.0]
+            series[s["Name"]] = {"ch": [[round(a, 3), round(b, 2)] for a, b in ser if a <= CALIB_END and abs(round(a * 12) - a * 12) < 0.5][::3]}
             at = lambda y: min(ser, key=lambda p: abs(p[0] - y))[1] if ser else None
             row.update(ch_2015=round(at(2015.0), 1), ch_2020=round(at(2020.0), 1), ch_2024=round(at(2024.0), 1))
         lit = next((os.path.join(r, f) for r, _, fs in os.walk(d) for f in fs if f.endswith("lithology.csv")), None)
@@ -66,6 +66,7 @@ def main(multi, single):
             for aq in sorted({r["Aquifer"] for r in O}):
                 v = [(yr(r["Date"]), float(r["Alt"])) for r in O if r["Aquifer"] == aq and fnum(r["Alt"]) is not None]
                 if not v: continue
+                if aq == "Lower" and s["Name"] in series: series[s["Name"]]["obs_lower"] = [[round(a, 2), b] for a, b in sorted(v)]
                 lo = min(v, key=lambda p: p[1]); rec = [p for p in v if p[0] >= 2015]
                 k = aq.lower()[:5]
                 row[f"obs_{k}_n"] = len(v); row[f"obs_{k}_lastdate"] = round(max(p[0] for p in v), 1)
@@ -76,6 +77,8 @@ def main(multi, single):
     with open(f"{HERE}/data/dwr_1d_sites.csv", "w", newline="") as f:
         w = csv.DictWriter(f, cols); w.writeheader(); w.writerows(rows)
     json.dump(series, open(f"{HERE}/data/dwr_1d_ch_series.json", "w"))
+    feats = [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [r["lon"], r["lat"]]}, "properties": r} for r in rows if r.get("lat") and "ch_2024" in r]
+    json.dump({"type": "FeatureCollection", "features": feats}, open(f"{HERE}/data/dwr_1d_sites.geojson", "w"))
     print(f"{len(rows)} sites; {sum(1 for r in rows if 'ch_2024' in r)} with calibrated critical-head series; missing: {[r['site'] for r in rows if 'ch_2024' not in r]}")
 
 

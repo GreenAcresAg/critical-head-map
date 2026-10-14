@@ -19,7 +19,7 @@
 
     <div class="sidebar-header">
         <h1>Critical Head Map</h1>
-        <p class="subtitle">Tulare Lake Subbasin &middot; Mid-Kings River &amp; South Fork Kings GSAs<br>Trend-based analysis &middot; DWR Land Subsidence BMP (Jan 2026) &sect;5.3.1</p>
+        <p class="subtitle">Tulare Lake Subbasin &middot; Mid-Kings River &amp; South Fork Kings GSAs<br>Trend-based (&sect;5.3.1) + empirical (&sect;5.3.2) analysis &middot; DWR Land Subsidence BMP (Jan 2026)</p>
     </div>
 
     <div class="sidebar-section">
@@ -42,6 +42,17 @@
     <div class="sidebar-section">
         <h3 class="section-title">Summary</h3>
         <div id="summary"></div>
+    </div>
+
+    <div class="sidebar-section">
+        <h3 class="section-title">Public-data layers &middot; Lemoore / Hanford / Corcoran</h3>
+        <label class="layer-toggle"><input type="checkbox" id="toggle-1d" checked><span class="conf-dot" style="background:#c084fc;border:2px solid #fff;margin:0 8px 0 0"></span><span>DWR 1D-model critical head sites</span></label>
+        <label class="layer-toggle" style="margin-top:6px"><input type="checkbox" id="toggle-pub" checked><span class="conf-dot" style="background:#38bdf8;margin:0 8px 0 0"></span><span>Public wells by depth vs Corcoran Clay</span></label>
+        <label class="filter-label" for="f-pub" style="margin-top:6px">Show public wells</label>
+        <select id="f-pub" class="filter-control"><option value="all">All 97 (&ge;12 readings since 2015)</option><option value="lc">Lower aquifer + composite only</option><option value="det">With an empirical estimate only</option></select>
+        <label class="layer-toggle" style="margin-top:6px"><input type="checkbox" id="toggle-gps" checked><span class="conf-dot" style="background:#fde047;margin:0 8px 0 0"></span><span>Continuous GPS stations</span></label>
+        <div id="legend-pub" class="insar-legend" style="margin-top:8px"></div>
+        <p class="disclaimer-text" style="margin-top:6px">Empirical method (BMP &sect;5.3.2): the lowest groundwater level during periods when the land rebounds &ge;0.067 ft above its maximum subsidence. Clay depth: DWR 1D lithology within 3 km, else USGS Page (1986) contours (&plusmn;~50 ft) &mdash; faded dots are ambiguous.</p>
     </div>
 
     <div class="sidebar-section">
@@ -74,6 +85,10 @@
             <li>CA DWR, <i>Land Subsidence BMP</i>, Jan 2026</li>
             <li>SGMA Portal groundwater-level measurements (DWR, GSA-submitted)</li>
             <li><a href="https://gis.water.ca.gov/arcgisimg/rest/services/SAR" target="_blank">DWR / TRE ALTAMIRA InSAR</a> (accuracy 0.067 ft)</li>
+            <li><a href="https://data.cnra.ca.gov/dataset/cv-1d-subsidence-models-and-tech-memo" target="_blank">DWR 1D subsidence models</a> (INTERA, Dec 2025)</li>
+            <li><a href="https://data.cnra.ca.gov/dataset/periodic-groundwater-level-measurements" target="_blank">DWR Periodic Groundwater Level Measurements</a></li>
+            <li>USGS Corcoran Clay depth/thickness (Page 1986; <a href="https://doi.org/10.5066/P99CZ9W4" target="_blank">doi:10.5066/P99CZ9W4</a>)</li>
+            <li>Nevada Geodetic Lab / EarthScope continuous GPS</li>
         </ul>
         <p class="disclaimer-text">For informational purposes only.</p>
     </div>
@@ -106,5 +121,6 @@
 <script src="vendor/maplibre-gl.js"></script>
 <script src="vendor/turf.min.js"></script>
 <script src="app.js"></script>
+<script src="layers2.js"></script>
 </body>
 </html>
