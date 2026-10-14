@@ -70,18 +70,23 @@ document.getElementById("toggle-insar").addEventListener("change", e => map.getL
 document.getElementById("insar-op").addEventListener("input", e => map.getLayer("insar") && map.setPaintProperty("insar", "raster-opacity", e.target.value / 100));
 
 /* ── GSA boundaries (target GSAs emphasised) ─────────────────────── */
+const SUBBASIN_COLORS = { "Tulare Lake": "#f43f5e", "Kings": "#3b82f6", "Kaweah": "#a855f7", "Tule": "#f59e0b", "Kern County": "#22c55e", "Westside": "#14b8a6", "Pleasant Valley": "#eab308" };
+function subbasinMatch(){ const m = ["match", ["get", "subbasin"]]; for (const [k, v] of Object.entries(SUBBASIN_COLORS)) m.push(k, v); m.push("#94a3b8"); return m; }
 async function addGSAs(){
     const g = await getJSON("data/surrounding_gsas_detail.geojson");
     const isT = ["in", ["get", "GSA_Name"], ["literal", TARGET]];
     map.addSource("gsas", { type: "geojson", data: g });
-    map.addLayer({ id: "gsas-fill", type: "fill", source: "gsas", filter: isT, paint: { "fill-color": "#f43f5e", "fill-opacity": 0.07 } }, "labels");
-    map.addLayer({ id: "gsas-line", type: "line", source: "gsas", paint: {
-        "line-color": ["case", isT, "#fb7185", "#cbd5e1"], "line-width": ["case", isT, 2.4, 0.8], "line-opacity": ["case", isT, 0.95, 0.5] } });
-    const pts = { type: "FeatureCollection", features: g.features.filter(f => TARGET.includes(f.properties.GSA_Name)).map(f => { const c = turf.centroid(f); c.properties = { n: f.properties.GSA_Name }; return c; }) };
+    map.addLayer({ id: "gsas-fill", type: "fill", source: "gsas", paint: { "fill-color": subbasinMatch(), "fill-opacity": ["case", isT, 0.1, 0.05] } }, "labels");
+    map.addLayer({ id: "gsas-casing", type: "line", source: "gsas", layout: { "line-join": "round" }, paint: { "line-color": "#0f172a", "line-width": ["interpolate", ["linear"], ["zoom"], 7, 1.1, 12, 2.4], "line-opacity": 0.45 } });
+    map.addLayer({ id: "gsas-line", type: "line", source: "gsas", layout: { "line-join": "round" }, paint: {
+        "line-color": ["case", isT, "#fb7185", subbasinMatch()], "line-width": ["interpolate", ["linear"], ["zoom"], 7, ["case", isT, 2, 0.7], 12, ["case", isT, 2.8, 1.5]], "line-opacity": ["case", isT, 0.95, 0.85] } });
+    const pts = { type: "FeatureCollection", features: g.features.map(f => { const c = turf.centroid(f); c.properties = { n: f.properties.GSA_Name, t: TARGET.includes(f.properties.GSA_Name) ? 1 : 0 }; return c; }) };
     map.addSource("gsa-lab", { type: "geojson", data: pts });
-    map.addLayer({ id: "gsas-label", type: "symbol", source: "gsa-lab", layout: { "text-field": ["get", "n"], "text-size": 12, "text-font": ["Noto Sans Bold"], "text-max-width": 8 },
-        paint: { "text-color": "#fff", "text-halo-color": "#0f172a", "text-halo-width": 1.8 } });
-    document.getElementById("toggle-gsa").addEventListener("change", e => ["gsas-fill","gsas-line","gsas-label"].forEach(l => map.setLayoutProperty(l, "visibility", e.target.checked ? "visible" : "none")));
+    map.addLayer({ id: "gsas-label", type: "symbol", source: "gsa-lab", minzoom: 8.5, layout: { "text-field": ["get", "n"], "text-size": ["case", ["==", ["get", "t"], 1], 12, 10.5], "text-font": ["Noto Sans Bold"], "text-max-width": 8 },
+        paint: { "text-color": "#fff", "text-halo-color": "#0f172a", "text-halo-width": 1.8, "text-opacity": ["case", ["==", ["get", "t"], 1], 1, 0.85] } });
+    const leg = document.getElementById("gsa-legend");
+    if (leg) leg.innerHTML = Object.entries(SUBBASIN_COLORS).map(([k, c]) => `<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 8px 0 0"><i style="width:10px;height:3px;background:${c};display:inline-block"></i>${k}</span>`).join("");
+    document.getElementById("toggle-gsa").addEventListener("change", e => ["gsas-fill","gsas-casing","gsas-line","gsas-label"].forEach(l => map.setLayoutProperty(l, "visibility", e.target.checked ? "visible" : "none")));
 }
 
 /* ── Wells ───────────────────────────────────────────────────────── */

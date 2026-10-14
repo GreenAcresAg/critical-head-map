@@ -151,12 +151,16 @@ async function openDwr1d(site){
 /* ── GPS detail ── */
 function openGps(sta){
     const g = gpsData[sta]; if (!g) return;
-    const base = g.gps.length ? g.gps[g.gps.length - 1] : null; const gi = g.gps; const a = 2015.45;
-    const gv = k => { let b = gi[0]; for (const p of gi) if (Math.abs(p[0] - k) < Math.abs(b[0] - k)) b = p; return b[1]; };
-    const rebased = gi.filter(p => p[0] >= a).map(p => [p[0], +(p[1] - gv(Math.max(a, gi[0][0]))).toFixed(3)]);
+    const base = g.gps.length ? g.gps[g.gps.length - 1] : null; const gi = g.gps; const a = g.insar.length ? g.insar[0][0] : 2015.45;
+    const near = (arr, k) => { let b = arr[0]; for (const p of arr) if (Math.abs(p[0] - k) < Math.abs(b[0] - k)) b = p; return b; };
+    const t0 = gi.length ? Math.max(a, gi[0][0]) : a;                                  // common start: GPS start if it begins after mid-2015
+    const interp = (arr, k) => { if (!arr.length) return 0; if (k <= arr[0][0]) return arr[0][1]; for (let i = 1; i < arr.length; i++) if (arr[i][0] >= k) { const [x0, y0] = arr[i - 1], [x1, y1] = arr[i]; return y0 + (y1 - y0) * (k - x0) / (x1 - x0); } return arr[arr.length - 1][1]; };
+    const off = interp(g.insar, t0) - near(gi, t0)[1];                                 // pin GPS to InSAR at t0 (not to zero)
+    const iEnd = g.insar.length ? g.insar[g.insar.length - 1][0] : 0, noOverlap = t0 - iEnd > 0.25;   // InSAR series ends before GPS starts
+    const rebased = gi.filter(p => p[0] >= t0).map(p => [p[0], +(p[1] + off).toFixed(3)]);
     const x1 = Math.ceil(Math.max(g.insar.length ? g.insar[g.insar.length - 1][0] : 2026, rebased.length ? rebased[rebased.length - 1][0] : 2026) + 0.05);
     const chart = stack([{ title: "Vertical displacement since mid-2015 (ft; negative = subsidence)", x0: 2015, x1, h: 220, axis: true, dec: 1, zero: true, ticks: 4, lines: [{ pts: rebased, c: "#fde047", w: 1.6 }, { pts: g.insar, c: C_DISP, w: 1.8 }] }]);
     showDetail(`<div class="d-title">GPS station ${esc(sta)}</div><div class="d-sub">Continuous GPS (Nevada Geodetic Lab / EarthScope) vs DWR InSAR sampled at the station</div>${chart}` +
-        legendRow([{ c: "#fde047", t: "GPS (rebased to mid-2015)" }, { c: C_DISP, t: "InSAR at station" }]) +
+        legendRow([{ c: "#fde047", t: noOverlap ? "GPS (no InSAR overlap: pinned to last InSAR value)" : "GPS (matched to InSAR on the GPS start date)" }, { c: C_DISP, t: "InSAR at station" }]) +
         `<div class="d-note" style="border-left-color:#fde047">Used to validate InSAR near the towns: see data/gps_validation.csv — over ~10 yr InSAR agrees with GPS within 0.1 ft at Hanford (CAHA), 0.33 ft at Lemoore (LEMA) and 0.47 ft at Corcoran (CRCN), slightly under-reading the sinking at the two biggest-subsidence towns.</div>`);
 }
